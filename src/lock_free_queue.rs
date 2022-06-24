@@ -32,12 +32,42 @@ pub struct Queue<T> {
 impl<T> Queue<T> {
     pub fn new() -> Self {
         let dummy_node = Box::into_raw(Box::new(Node::empty()));
-        let head = AtomicPtr::from(dummy_node);
-        let tail = AtomicPtr::new(head.load(Ordering::SeqCst));
+        let head = AtomicPtr::new(dummy_node);
+        let tail = AtomicPtr::new(dummy_node);
         Queue { head, tail }
     }
 
+    // pub fn enqueue(&mut self, x: T) {
+    //     // enqueue in figure 1
+    //     let q = Box::into_raw(Box::new(Node::new(x))); // new node
+    //     let mut p: *mut Node<T>;
+    //     loop {
+    //         p = self.tail.load(Ordering::Acquire);
+    //         let succ = unsafe {
+    //             (*p).next
+    //                 .compare_exchange(ptr::null_mut(), q, Ordering::Release, Ordering::Relaxed)
+    //                 .is_ok()
+    //         };
+    //         if succ != true {
+    //             unsafe {
+    //                 let _ = self.tail.compare_exchange(
+    //                     p,
+    //                     (*p).next.load(Ordering::Acquire),
+    //                     Ordering::Release,
+    //                     Ordering::Relaxed,
+    //                 );
+    //             };
+    //         } else {
+    //             break;
+    //         }
+    //     }
+    //     let _ = self
+    //         .tail
+    //         .compare_exchange(p, q, Ordering::Release, Ordering::Relaxed);
+    // }
+
     pub fn enqueue(&mut self, x: T) {
+        // enqueue in figure 3
         let q = Box::into_raw(Box::new(Node::new(x)));
         let mut p = self.tail.load(Ordering::Acquire);
         let old_p = p;
