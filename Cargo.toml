@@ -12,5 +12,9 @@ edition = "2021"
 criterion = "0.3"
 
 [[bench]]
-name = "my_benchmark"
+name = "lock_based_queue"
+harness = false
+
+[[bench]]
+name = "lock_free_queue"
 harness = false
