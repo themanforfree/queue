@@ -90,6 +90,7 @@ impl<T> Queue<T> {
     }
 
     pub fn dequeue(&mut self) -> Option<T> {
+        let data: Option<T>;
         loop {
             let p = self.head.load(Ordering::Acquire);
             let p_next = unsafe { (*p).next.load(Ordering::Acquire) };
@@ -102,8 +103,18 @@ impl<T> Queue<T> {
                 .compare_exchange(p, p_next, Ordering::Release, Ordering::Relaxed)
                 .is_ok()
             {
-                return unsafe { (*p_next).value.take() };
+                data = unsafe { (*p_next).value.take() };
+                let _ = unsafe { Box::from_raw(p) };
+                break;
             }
         }
+        return data;
+    }
+}
+
+impl<T> Drop for Queue<T> {
+    fn drop(&mut self) {
+        while self.dequeue().is_some() {}
+        let _ = unsafe { Box::from_raw(self.head.load(Ordering::Acquire)) };
     }
 }
