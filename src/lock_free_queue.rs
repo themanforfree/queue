@@ -8,17 +8,19 @@ struct Node<T> {
     next: AtomicPtr<Node<T>>,
 }
 
+impl<T> Default for Node<T> {
+    fn default() -> Self {
+        Node {
+            value: None,
+            next: AtomicPtr::from(ptr::null_mut()),
+        }
+    }
+}
+
 impl<T> Node<T> {
     fn new(value: T) -> Self {
         Node {
             value: Some(value),
-            next: AtomicPtr::from(ptr::null_mut()),
-        }
-    }
-
-    fn empty() -> Self {
-        Node {
-            value: None,
             next: AtomicPtr::from(ptr::null_mut()),
         }
     }
@@ -29,12 +31,18 @@ pub struct Queue<T> {
     tail: AtomicPtr<Node<T>>,
 }
 
-impl<T> Queue<T> {
-    pub fn new() -> Self {
-        let dummy_node = Box::into_raw(Box::new(Node::empty()));
+impl<T> Default for Queue<T> {
+    fn default() -> Self {
+        let dummy_node = Box::into_raw(Box::new(Node::default()));
         let head = AtomicPtr::new(dummy_node);
         let tail = AtomicPtr::new(dummy_node);
         Queue { head, tail }
+    }
+}
+
+impl<T> Queue<T> {
+    pub fn new() -> Self {
+        Self::default()
     }
 
     // pub fn enqueue(&mut self, x: T) {
@@ -105,10 +113,9 @@ impl<T> Queue<T> {
             {
                 data = unsafe { (*p_next).value.take() };
                 let _ = unsafe { Box::from_raw(p) };
-                break;
+                return data;
             }
         }
-        return data;
     }
 }
 

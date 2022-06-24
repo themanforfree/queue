@@ -2,9 +2,15 @@ use std::{collections::LinkedList, sync::Mutex};
 
 pub struct Queue<T>(Mutex<LinkedList<T>>);
 
+impl<T> Default for Queue<T> {
+    fn default() -> Self {
+        Queue(Mutex::new(LinkedList::new()))
+    }
+}
+
 impl<T> Queue<T> {
     pub fn new() -> Self {
-        Queue(Mutex::new(LinkedList::new()))
+        Self::default()
     }
 
     pub fn enqueue(&mut self, x: T) {
