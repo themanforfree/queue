@@ -3,7 +3,7 @@ use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use queue::lock_based_queue::Queue;
 
 fn criterion_benchmark(c: &mut Criterion) {
-    let mut q = Queue::new();
+    let q = Queue::new();
     c.bench_function("lock_based_queue", |b| {
         b.iter(|| {
             for i in 0..black_box(100) {
