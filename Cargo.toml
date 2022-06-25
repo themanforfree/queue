@@ -6,15 +6,11 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-
+crossbeam = "0.8"
 
 [dev-dependencies]
 criterion = "0.3"
 
 [[bench]]
-name = "lock_based_queue"
-harness = false
-
-[[bench]]
-name = "lock_free_queue"
+name = "benchmark"
 harness = false

@@ -1,11 +1,12 @@
 use std::{
     ptr,
-    sync::atomic::{AtomicPtr, Ordering},
+    sync::atomic::{AtomicPtr, AtomicUsize, Ordering},
 };
 
 struct Node<T> {
     value: Option<T>,
     next: AtomicPtr<Node<T>>,
+    refct: AtomicUsize,
 }
 
 impl<T> Default for Node<T> {
@@ -13,6 +14,7 @@ impl<T> Default for Node<T> {
         Node {
             value: None,
             next: AtomicPtr::from(ptr::null_mut()),
+            refct: AtomicUsize::new(0),
         }
     }
 }
@@ -22,6 +24,7 @@ impl<T> Node<T> {
         Node {
             value: Some(value),
             next: AtomicPtr::from(ptr::null_mut()),
+            refct: AtomicUsize::new(0),
         }
     }
 }
@@ -49,8 +52,16 @@ impl<T> Queue<T> {
         let q = Box::into_raw(Box::new(Node::new(x)));
         let mut p = self.tail.load(Ordering::Acquire);
         let old_p = p;
+        // unsafe { let old = (*old_p).refct.fetch_add(1, Ordering::Release); }
 
         unsafe {
+            loop {
+                if (*old_p).refct.fetch_add(1, Ordering::Release) == 0 {
+                    break;
+                }
+                (*old_p).refct.fetch_sub(1, Ordering::Release);
+            }
+
             while (*p)
                 .next
                 .compare_exchange(ptr::null_mut(), q, Ordering::Release, Ordering::Relaxed)
@@ -65,6 +76,10 @@ impl<T> Queue<T> {
         let _ = self
             .tail
             .compare_exchange(old_p, q, Ordering::Release, Ordering::Relaxed);
+
+        unsafe {
+            (*old_p).refct.fetch_sub(1, Ordering::Release);
+        }
     }
 
     pub fn dequeue(&self) -> Option<T> {
@@ -75,15 +90,33 @@ impl<T> Queue<T> {
                 return None;
             }
 
+            unsafe {
+                loop {
+                    if (*p).refct.fetch_add(1, Ordering::Release) == 0 {
+                        break;
+                    }
+                    (*p).refct.fetch_sub(1, Ordering::Release);
+                }
+            }
+
             if self
                 .head
                 .compare_exchange(p, p_next, Ordering::Release, Ordering::Relaxed)
                 .is_ok()
             {
+                unsafe {
+                    (*p).refct.fetch_sub(1, Ordering::Release);
+                }
                 let data: Option<T>;
                 unsafe {
                     data = (*p_next).value.take();
-                    let _ = Box::from_raw(p);
+
+                    loop {
+                        if (*p).refct.load(Ordering::Acquire) == 0 {
+                            let _ = Box::from_raw(p);
+                            break;
+                        }
+                    }
                 }
                 return data;
             }
