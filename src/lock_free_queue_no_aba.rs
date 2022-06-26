@@ -52,7 +52,6 @@ impl<T> Queue<T> {
         let q = Box::into_raw(Box::new(Node::new(x)));
         let mut p = self.tail.load(Ordering::Acquire);
         let old_p = p;
-        // unsafe { let old = (*old_p).refct.fetch_add(1, Ordering::Release); }
 
         unsafe {
             loop {
