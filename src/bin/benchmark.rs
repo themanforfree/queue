@@ -57,18 +57,30 @@ fn main() {
         lfqe1.dequeue();
     });
 
-    println!("lock_free_queue lock_free_queue_no_aba lock_free_queue_by_epoch lock_based_queue");
-
     lfq_cnt.store(0, Ordering::Release);
     lfqn_cnt.store(0, Ordering::Release);
     lfqe_cnt.store(0, Ordering::Release);
     lbq_cnt.store(0, Ordering::Release);
-    thread::sleep(Duration::from_secs(5));
+
+    let mut lfq_sum = 0;
+    let mut lfqn_sum = 0;
+    let mut lfqe_sum = 0;
+    let mut lbq_sum = 0;
+
+    for _ in 0..5 {
+        thread::sleep(Duration::from_secs(1));
+        lfq_sum += lfq_cnt.load(Ordering::Acquire);
+        lfqn_sum += lfqn_cnt.load(Ordering::Acquire);
+        lfqe_sum += lfqe_cnt.load(Ordering::Acquire);
+        lbq_sum += lbq_cnt.load(Ordering::Acquire);
+    }
+
+    println!("lock_free_queue lock_free_queue_no_aba lock_free_queue_by_epoch lock_based_queue");
     println!(
         "{} {} {} {}",
-        lfq_cnt.load(Ordering::Acquire),
-        lfqn_cnt.load(Ordering::Acquire),
-        lfqe_cnt.load(Ordering::Acquire),
-        lbq_cnt.load(Ordering::Acquire),
+        lfq_sum / 5,
+        lfqn_sum / 5,
+        lfqe_sum / 5,
+        lbq_sum / 5,
     );
 }
