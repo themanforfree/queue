@@ -12,6 +12,6 @@
 
 ## Benchmark 结果
 各种实现在多线程环境下每秒执行的`enqueue`操作数量。
-| lock_free_queue | lock_free_queue | lock_free_queue_by_epoch | lock_based_queue |
-| :-------------: | :-------------: | :----------------------: | :--------------: |
-|     4063920     |     2346813     |         1293374          |     1074467      |
+| lock_free_queue | lock_free_queue_no_aba | lock_free_queue_by_epoch | lock_based_queue |
+| :-------------: | :--------------------: | :----------------------: | :--------------: |
+|     4063920     |        2346813         |         1293374          |     1074467      |
