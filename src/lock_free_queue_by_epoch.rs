@@ -92,7 +92,6 @@ impl<T> Queue<T> {
                 unsafe {
                     data = p_next.deref_mut().value.take();
                     guard.defer_destroy(p);
-                    // let _ = Box::from_raw(p);
                 }
                 return data;
             }

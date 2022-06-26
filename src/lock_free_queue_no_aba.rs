@@ -56,6 +56,7 @@ impl<T> Queue<T> {
 
         unsafe {
             loop {
+                // 在开始 CAS 操作前将 refct 加一，阻止其他线程释放该节点
                 if (*old_p).refct.fetch_add(1, Ordering::Release) == 0 {
                     break;
                 }
@@ -66,6 +67,7 @@ impl<T> Queue<T> {
                 .next
                 .compare_exchange(ptr::null_mut(), q, Ordering::Release, Ordering::Relaxed)
                 .is_err()
+            // 此 CAS 操作不会出现 ABA 问题
             {
                 while !(*p).next.load(Ordering::Acquire).is_null() {
                     p = (*p).next.load(Ordering::Acquire);
@@ -78,6 +80,7 @@ impl<T> Queue<T> {
             .compare_exchange(old_p, q, Ordering::Release, Ordering::Relaxed);
 
         unsafe {
+            // CAS 操作结束后 refct 减一，表示该节点可已被释放
             (*old_p).refct.fetch_sub(1, Ordering::Release);
         }
     }
@@ -91,6 +94,7 @@ impl<T> Queue<T> {
             }
 
             unsafe {
+                // 在开始 CAS 操作前将 refct 加一，阻止其他线程释放该节点
                 loop {
                     if (*p).refct.fetch_add(1, Ordering::Release) == 0 {
                         break;
@@ -105,6 +109,7 @@ impl<T> Queue<T> {
                 .is_ok()
             {
                 unsafe {
+                    // CAS 操作结束后 refct 减一，表示该节点可已被释放
                     (*p).refct.fetch_sub(1, Ordering::Release);
                 }
                 let data: Option<T>;
@@ -112,6 +117,7 @@ impl<T> Queue<T> {
                     data = (*p_next).value.take();
 
                     loop {
+                        // 尝试释放节点，仅当该节点 refct 值为0时允许释放，也就是没有线程在对该节点进行 CAS 操作，避免 ABA 问题发生。
                         if (*p).refct.load(Ordering::Acquire) == 0 {
                             let _ = Box::from_raw(p);
                             break;
